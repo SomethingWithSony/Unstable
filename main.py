@@ -1,5 +1,6 @@
 import pygame
 import settings
+import math 
 
 # Ideas
 # Exploding bullets damage the arena
@@ -12,7 +13,6 @@ import settings
 # Organize the structure of the project - Only if there's time left 
 
 # FOR TOMOROW - Closes Basic gameplay loop
-# FALL OF PLATFORM
 # RESTART SCREEN
 
 
@@ -145,6 +145,8 @@ class Player:
             self.time_until_next_shot = cooldown(self.time_until_next_shot)[1]
 
     def update(self):
+        self.detect_out_of_arena()
+
         self.vel = pygame.Vector2(0, 0)
         if self.left_pressed and not self.right_pressed:
             self.vel[0] = -self.move_speed
@@ -192,9 +194,23 @@ class Player:
         self.health = pygame.math.clamp( self.health, 0 , self.max_health) 
         self.health_rect.width = self.health
 
+    def detect_out_of_arena(self):
+        # Distance between the center of the arena and the player
+        distance = math.sqrt( (self.x - self.game.arena_center[0])**2 + (self.y - self.game.arena_center[1])**2)
         
+        offset = 15
+        # If the distance between the player and the center of the arena is > the player is outside the arena
+        if distance + offset <= self.game.arena_radius:
+            pass
+        else:
+            self.die()
+
+
     def die(self):
         # Explode particle and restart screen
+        # or
+        # Animate player falling - a simple layer system may be needed
+        # Activate resttart screen
         pass
 
 class Game:
@@ -209,14 +225,17 @@ class Game:
         self.player = Player(self, settings.WIDTH/2, settings.HEIGHT/2)
 
         self.bullets = []
+
+        self.arena_center = (350,400)
+        self.arena_radius = 250
         
 
-    def draw_arena(self, color=(100,99,101), center=(350,400), radius=250):
+    def draw_arena(self, color=(100,99,101) ):
         # Pillar / shadow
-        pygame.draw.rect(self.screen, (69,68,79), pygame.Rect(center[0] - radius , center[1], radius * 2, 700))
+        pygame.draw.rect(self.screen, (69,68,79), pygame.Rect(self.arena_center[0] - self.arena_radius , self.arena_center[1], self.arena_radius * 2, 700))
 
         # Arena
-        pygame.draw.circle(self.screen, color, center, radius)
+        pygame.draw.circle(self.screen, color, self.arena_center, self.arena_radius)
 
 
 
