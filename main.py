@@ -1,7 +1,6 @@
 import pygame
 import settings
 
-
 # FOR TOMOROW
 # FIRERATE
 # AMMO
@@ -10,6 +9,12 @@ import settings
 # RESTART SCREEN
 
 
+
+def cooldown(time):
+    time -= 1/settings.FRAMERATE
+    if time <= 0:
+        return True, time
+    return False,time
 class Particle:
     def __init__(self, velocity, duration):
         self.velocity = velocity
@@ -62,7 +67,9 @@ class Player:
         self.down_pressed = False
 
         self.ammo = 20
-        self.fire_rate = 1
+
+        self.fire_rate = 1/10
+        self.time_until_next_shot = 0
 
     def render(self):
         pygame.draw.circle(self.game.screen, (69,68,79), [self.x, self.y + 2.5], 8) # player shadow
@@ -99,7 +106,15 @@ class Player:
 
     def shoot(self):
         direction = (pygame.mouse.get_pos()[0] - self.x, pygame.mouse.get_pos()[1] - self.y)
-        self.game.bullets.append(Bullet(self.x, self.y, direction, 5))
+        
+        if cooldown(self.time_until_next_shot)[0]:
+            self.game.bullets.append(Bullet(self.x, self.y, direction, 5))
+            self.time_until_next_shot = self.fire_rate
+        else: 
+            self.time_until_next_shot = cooldown(self.time_until_next_shot)[1]
+
+       
+       
         
     
 
@@ -135,7 +150,7 @@ class Game:
         self.player = Player(self, settings.WIDTH/2, settings.HEIGHT/2)
 
         self.bullets = []
-
+        
 
     def draw_arena(self, color=(100,99,101), center=(350,400), radius=250):
         pygame.draw.rect(self.screen, (69,68,79), pygame.Rect(center[0] - radius , center[1], radius * 2, 700))
@@ -157,7 +172,7 @@ class Game:
             
             
 
-
+            
 
             self.player.inputs_shooting()
             for event in pygame.event.get():
@@ -169,7 +184,7 @@ class Game:
             self.player.update()
 
             pygame.display.flip()
-            self.clock.tick(60)
+            self.clock.tick(settings.FRAMERATE)
 
 game = Game()
 
