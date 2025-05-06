@@ -1,13 +1,19 @@
 import pygame
 import settings
 
-# FOR TOMOROW
-# FIRERATE
-# AMMO
-# HEALTH
+# Ideas
+# Exploding bullets damage the arena
+
+# Reminders
+# Instead of suddenly disapearing make the health bar fade away - Visual improvement
+# Need to implement reload - Core Gameplay
+# Delete bullets that are offscreen - Perfomance improvement
+# Need to implement the theme  - Unstable
+# Organize the structure of the project - Only if there's time left 
+
+# FOR TOMOROW - Closes Basic gameplay loop
 # FALL OF PLATFORM
 # RESTART SCREEN
-
 
 
 def cooldown(time):
@@ -15,6 +21,8 @@ def cooldown(time):
     if time <= 0:
         return True, time
     return False,time
+
+# Implement after the core gameplay is finished
 class Particle:
     def __init__(self, velocity, duration):
         self.velocity = velocity
@@ -31,50 +39,64 @@ class Bullet:
         self.y = y
 
     def render(self, screen):
-        
+        pygame.draw.circle(screen, (69,68,79), (self.x,self.y + 10), 2)
+        pygame.draw.circle(screen, (255,255,255), (self.x,self.y), 2)
+
+    def update(self):
         if self.direction != (0,0):
             self.direction.normalize_ip()
 
         self.x += self.direction[0]  * self.velocity
         self.y += self.direction[1] * self.velocity
 
-
-        
-        pygame.draw.circle(screen, (69,68,79), (self.x,self.y + 10), 2)
-        pygame.draw.circle(screen, (255,255,255), (self.x,self.y), 2)
-
     def destroy(self):
         pass
 
 class Player:
     def __init__(self, game, x, y):
+        # Reference to the game (mostly used to reference the surface needed to display the player)
         self.game = game
-
+        
+        # Player render?
         self.rect = pygame.Rect(x,y,8,8)
-
-
         self.x = x 
         self.y = y
         self.color = (180,82,82)
 
+
+        # Movement
         self.vel = pygame.Vector2(0, 0)
         self.move_speed = 2
-        
 
         self.left_pressed = False
         self.right_pressed = False
         self.up_pressed = False
         self.down_pressed = False
 
+        # Attacking
         self.ammo = 20
-
         self.fire_rate = 1/10
         self.time_until_next_shot = 0
 
+        # Health
+        self.max_health = 30
+        self.health = 25
+        self.health_rect = pygame.Rect(self.x - 15, self.y - 15, self.health, 2)
+
+        self.show_health = True
+        self.show_health_time = 5
+        self.time_until_health_stops_showing = self.show_health_time
+
     def render(self):
-        pygame.draw.circle(self.game.screen, (69,68,79), [self.x, self.y + 2.5], 8) # player shadow
+        # Shadow
+        pygame.draw.circle(self.game.screen, (69,68,79), [self.x, self.y + 2.5], 8) 
+        # Player
         pygame.draw.circle(self.game.screen, self.color, [self.x, self.y], 8)
 
+        if self.show_health:
+            # Health bar
+            pygame.draw.rect(self.game.screen, (69,68,79), pygame.Rect(self.health_rect.x, self.health_rect.y, self.max_health, 2))
+            pygame.draw.rect(self.game.screen, (255,255,255), self.health_rect)
 
     def inputs(self, event):
         if event.type == pygame.KEYDOWN:
@@ -101,8 +123,11 @@ class Player:
                 self.down_pressed = False
 
     def inputs_shooting(self):
-        if pygame.mouse.get_pressed()[0]:
+        if pygame.mouse.get_pressed()[0] and self.ammo > 0:
             self.shoot()
+
+        if self.ammo == 0 :
+            print("Out of ammo")
 
     def shoot(self):
         direction = (pygame.mouse.get_pos()[0] - self.x, pygame.mouse.get_pos()[1] - self.y)
@@ -110,14 +135,9 @@ class Player:
         if cooldown(self.time_until_next_shot)[0]:
             self.game.bullets.append(Bullet(self.x, self.y, direction, 5))
             self.time_until_next_shot = self.fire_rate
+            self.ammo -= 1
         else: 
             self.time_until_next_shot = cooldown(self.time_until_next_shot)[1]
-
-       
-       
-        
-    
-
 
     def update(self):
         self.vel = pygame.Vector2(0, 0)
@@ -136,7 +156,27 @@ class Player:
         self.x += int(self.vel[0] * self.move_speed)
         self.y += int(self.vel[1] * self.move_speed)
 
+       
+        if self.show_health:
+             # Update healthbar position
+            self.health_rect.x = self.x - 15
+            self.health_rect.y = self.y - 15
+
+            if cooldown(self.time_until_health_stops_showing)[0]:
+                self.show_health = False
+                self.time_until_health_stops_showing = self.show_health_time
+            else: 
+                self.time_until_health_stops_showing = cooldown(self.time_until_health_stops_showing)[1]
+
+    def take_damage(self, amount):
+        self.heatlh = pygame.math.clamp( self.health  - amount, 0 , self.max_health) 
+
+    def heal(self, amount):
+        self.heatlh = pygame.math.clamp( self.health  + amount, 0 , self.max_health) 
         
+    def die(self):
+        # die
+        pass
 
 class Game:
     def __init__(self):
@@ -153,8 +193,10 @@ class Game:
         
 
     def draw_arena(self, color=(100,99,101), center=(350,400), radius=250):
+        # Pillar / shadow
         pygame.draw.rect(self.screen, (69,68,79), pygame.Rect(center[0] - radius , center[1], radius * 2, 700))
 
+        # Arena
         pygame.draw.circle(self.screen, color, center, radius)
 
 
@@ -163,17 +205,13 @@ class Game:
         while self.running:
             self.screen.fill((134,129,136))
 
+            # Renders
             self.draw_arena()
-
             for bullet in self.bullets:
                 bullet.render(self.screen)
-
             self.player.render()
             
-            
-
-            
-
+            # Inputs
             self.player.inputs_shooting()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -181,7 +219,11 @@ class Game:
 
                 self.player.inputs(event)
 
+            # Updates
+            for bullet in self.bullets:
+                bullet.update()
             self.player.update()
+            
 
             pygame.display.flip()
             self.clock.tick(settings.FRAMERATE)
