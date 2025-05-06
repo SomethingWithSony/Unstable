@@ -110,6 +110,11 @@ class Player:
             if event.key == pygame.K_s:
                 self.down_pressed = True
 
+            if event.key == pygame.K_t:
+                self.take_damage(5)
+
+            if event.key == pygame.K_h:
+                self.heal(5)
 
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_a:
@@ -167,15 +172,29 @@ class Player:
                 self.time_until_health_stops_showing = self.show_health_time
             else: 
                 self.time_until_health_stops_showing = cooldown(self.time_until_health_stops_showing)[1]
+        
+        # Slowly heal player - improve later
+        self.heal(.025)
+
+        if self.health <= 0:
+            self.die()
 
     def take_damage(self, amount):
-        self.heatlh = pygame.math.clamp( self.health  - amount, 0 , self.max_health) 
+        self.health -= amount
+        self.health = pygame.math.clamp( self.health, 0 , self.max_health) 
+        self.health_rect.width = self.health
+
+        self.show_health = True
+        self.time_until_health_stops_showing = self.show_health_time
 
     def heal(self, amount):
-        self.heatlh = pygame.math.clamp( self.health  + amount, 0 , self.max_health) 
+        self.health += amount
+        self.health = pygame.math.clamp( self.health, 0 , self.max_health) 
+        self.health_rect.width = self.health
+
         
     def die(self):
-        # die
+        # Explode particle and restart screen
         pass
 
 class Game:
