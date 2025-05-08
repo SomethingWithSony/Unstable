@@ -4,7 +4,7 @@ HEIGHT = 700
 
 FRAMERATE = 60
 
-# Colors
-BACKGROUND = (134,129,136) 
-SHADOWS = (69,68,79)
-ARENA = (100,99,101)
+
+
+
+
